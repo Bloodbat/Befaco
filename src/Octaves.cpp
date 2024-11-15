@@ -80,12 +80,12 @@ struct Octaves : Module {
 		configInput(VOCT2_INPUT, "V/Octave 2");
 		configInput(SYNC_INPUT, "Sync");
 		configInput(PWM_INPUT, "PWM");
-		configInput(GAIN_01F_INPUT, "Gain x1F CV");
-		configInput(GAIN_02F_INPUT, "Gain x1F CV");
-		configInput(GAIN_04F_INPUT, "Gain x1F CV");
-		configInput(GAIN_08F_INPUT, "Gain x1F CV");
-		configInput(GAIN_16F_INPUT, "Gain x1F CV");
-		configInput(GAIN_32F_INPUT, "Gain x1F CV");
+		configInput(GAIN_01F_INPUT, "Gain Fundamental CV");
+		configInput(GAIN_02F_INPUT, "Gain x2F CV");
+		configInput(GAIN_04F_INPUT, "Gain x4F CV");
+		configInput(GAIN_08F_INPUT, "Gain x8F CV");
+		configInput(GAIN_16F_INPUT, "Gain x16F CV");
+		configInput(GAIN_32F_INPUT, "Gain x32F CV");
 
 		configOutput(OUT_01F_OUTPUT, "x1F");
 		configOutput(OUT_02F_OUTPUT, "x2F");
@@ -115,12 +115,10 @@ struct Octaves : Module {
 		const int numActivePolyphonyEngines = getNumActivePolyphonyEngines();
 
 		// work out active outputs
-		const std::vector<int> connectedOutputs = getConnectedOutputs();
-		if (connectedOutputs.size() == 0) {
+		const int highestOutput = getMaxConnectedOutput();
+		if (highestOutput == -1) {
 			return;
 		}
-		// only process up to highest active channel
-		const int highestOutput = *std::max_element(connectedOutputs.begin(), connectedOutputs.end());
 
 		for (int c = 0; c < numActivePolyphonyEngines; c += 4) {
 
@@ -200,8 +198,10 @@ struct Octaves : Module {
 			}
 		}	// end of polyphony loop
 
-		for (int connectedOutput : connectedOutputs) {
-			outputs[OUT_01F_OUTPUT + connectedOutput].setChannels(numActivePolyphonyEngines);
+		for (int c = 0; c < NUM_OUTPUTS; c++) {
+			if (outputs[OUT_01F_OUTPUT + c].isConnected()) {
+				outputs[OUT_01F_OUTPUT + c].setChannels(numActivePolyphonyEngines);
+			}
 		}
 	}
 
@@ -219,14 +219,14 @@ struct Octaves : Module {
 		return activePolyphonyEngines;
 	}
 
-	std::vector<int> getConnectedOutputs() {
-		std::vector<int> connectedOutputs;
+	int getMaxConnectedOutput() {
+		int maxChans = -1;
 		for (int c = 0; c < NUM_OUTPUTS; c++) {
 			if (outputs[OUT_01F_OUTPUT + c].isConnected()) {
-				connectedOutputs.push_back(c);
+				maxChans = c;
 			}
 		}
-		return connectedOutputs;
+		return maxChans;
 	}
 
 	json_t* dataToJson() override {

@@ -40,9 +40,15 @@ struct DualAtenuverter : Module {
 		float_4 out1[4] = {};
 		float_4 out2[4] = {};
 
+		Input channel2Input = inputs[IN2_INPUT];
+
+		if (inputs[IN1_INPUT].isConnected() && !inputs[IN2_INPUT].isConnected()) {
+			channel2Input = inputs[IN1_INPUT];
+		}
+
 		int channels1 = inputs[IN1_INPUT].getChannels();
 		channels1 = channels1 > 0 ? channels1 : 1;
-		int channels2 = inputs[IN2_INPUT].getChannels();
+		int channels2 = channel2Input.getChannels();
 		channels2 = channels2 > 0 ? channels2 : 1;
 
 		float att1 = params[ATEN1_PARAM].getValue();
@@ -55,7 +61,7 @@ struct DualAtenuverter : Module {
 			out1[c / 4] = clamp(inputs[IN1_INPUT].getVoltageSimd<float_4>(c) * att1 + offset1, -10.f, 10.f);
 		}
 		for (int c = 0; c < channels2; c += 4) {
-			out2[c / 4] = clamp(inputs[IN2_INPUT].getVoltageSimd<float_4>(c) * att2 + offset2, -10.f, 10.f);
+			out2[c / 4] = clamp(channel2Input.getVoltageSimd<float_4>(c) * att2 + offset2, -10.f, 10.f);
 		}
 
 		outputs[OUT1_OUTPUT].setChannels(channels1);
